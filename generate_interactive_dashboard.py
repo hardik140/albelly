@@ -1,8 +1,9 @@
 import json
 import os
 
-json_path = r"e:\albelly\sales_data_consolidated.json"
-html_path = r"e:\albelly\index.html"
+# Use relative paths that work across all platforms
+json_path = os.path.join(os.path.dirname(__file__), "sales_data_consolidated.json")
+html_path = os.path.join(os.path.dirname(__file__), "index.html")
 
 print("Generating premium interactive sales dashboard...")
 
