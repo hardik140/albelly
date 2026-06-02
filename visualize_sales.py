@@ -583,7 +583,7 @@ html_content = f"""<!DOCTYPE html>
             <p>Interactive Plotly Engine (3 Years consolidated)</p>
         </div>
         <div style="display: flex; align-items: center; gap: 1rem;">
-            <a href="dashboard.html" style="text-decoration: none; color: #fff; background: var(--primary); padding: 0.5rem 1rem; border-radius: 8px; font-size: 0.8rem; font-weight: 600; box-shadow: 0 4px 10px rgba(99, 102, 241, 0.2); transition: all 0.3s ease;">
+            <a href="index.html" style="text-decoration: none; color: #fff; background: var(--primary); padding: 0.5rem 1rem; border-radius: 8px; font-size: 0.8rem; font-weight: 600; box-shadow: 0 4px 10px rgba(99, 102, 241, 0.2); transition: all 0.3s ease;">
                 Go to Interactive Ledger Explorer & Uploader &rarr;
             </a>
             <div class="header-action-badge">

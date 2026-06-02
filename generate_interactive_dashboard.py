@@ -2,7 +2,7 @@ import json
 import os
 
 json_path = r"e:\albelly\sales_data_consolidated.json"
-html_path = r"e:\albelly\dashboard.html"
+html_path = r"e:\albelly\index.html"
 
 print("Generating premium interactive sales dashboard...")
 
