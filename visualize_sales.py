@@ -278,6 +278,38 @@ div_lost = plot(fig_lost, include_plotlyjs=False, output_type='div')
 # Calculate KPI labels
 total_lost_val = df[df['Status'] == 'Lost']['FY_24_25'].sum()
 
+# Plotly Chart 6: Slipping Revenue Leakage Pipeline (Ordering Less YoY)
+slipping_df = df[(df['Status'] == 'Retained') & (df['FY_25_26'] < df['FY_24_25']) & (df['FY_24_25'] > 0)].copy()
+slipping_df['Revenue_Drop'] = slipping_df['FY_24_25'] - slipping_df['FY_25_26']
+slipping_df = slipping_df.sort_values(by='Revenue_Drop', ascending=False).head(15)
+
+fig_slipping = go.Figure()
+fig_slipping.add_trace(go.Bar(
+    x=slipping_df['Revenue_Drop'],
+    y=slipping_df['Particulars'],
+    orientation='h',
+    marker=dict(
+        color='rgba(249, 115, 22, 0.2)',
+        line=dict(color='#f97316', width=1.5)
+    ),
+    hovertemplate="<b>%{y}</b><br>Revenue Drop: ₹%{x:,.2f}<br>FY 24-25: ₹%{customdata[0]:,.2f}<br>FY 25-26: ₹%{customdata[1]:,.2f}<extra></extra>",
+    customdata=np.stack((slipping_df['FY_24_25'], slipping_df['FY_25_26']), axis=-1)
+))
+fig_slipping.update_layout(**dark_plotly_layout)
+fig_slipping.update_layout(
+    title=dict(text="Top 15 Active Slipping Customer Accounts", font=dict(family='Outfit', size=16)),
+    height=400
+)
+fig_slipping.update_yaxes(autorange="reversed")
+fig_slipping.update_xaxes(title='Year-over-Year Revenue Decelerated (FY 24-25 to FY 25-26 Drop)')
+div_slipping = plot(fig_slipping, include_plotlyjs=False, output_type='div')
+
+# Calculate KPI labels for Slipping
+total_slipping_val = df[(df['Status'] == 'Retained') & (df['FY_25_26'] < df['FY_24_25']) & (df['FY_24_25'] > 0)].copy()
+total_slipping_val['Revenue_Drop'] = total_slipping_val['FY_24_25'] - total_slipping_val['FY_25_26']
+slipping_revenue_leakage = total_slipping_val['Revenue_Drop'].sum()
+slipping_accounts_count = len(total_slipping_val)
+
 print("[Plotly] Interactive components generated successfully.")
 
 # ---------------------------------------------------------
@@ -421,6 +453,7 @@ html_content = f"""<!DOCTYPE html>
         .kpi-card.violet::before {{ background: var(--violet); }}
         .kpi-card.emerald::before {{ background: var(--success); }}
         .kpi-card.coral::before {{ background: var(--danger); }}
+        .kpi-card.orange::before {{ background: #f97316; }}
 
         .kpi-label {{
             font-size: 0.8rem;
@@ -549,9 +582,14 @@ html_content = f"""<!DOCTYPE html>
             <h1>Sales Intelligence Center</h1>
             <p>Interactive Plotly Engine (3 Years consolidated)</p>
         </div>
-        <div class="header-action-badge">
-            <span style="display:inline-block; width: 8px; height: 8px; background: var(--success); border-radius: 50%; box-shadow: 0 0 8px var(--success);"></span>
-            Plotly Engine Active
+        <div style="display: flex; align-items: center; gap: 1rem;">
+            <a href="dashboard.html" style="text-decoration: none; color: #fff; background: var(--primary); padding: 0.5rem 1rem; border-radius: 8px; font-size: 0.8rem; font-weight: 600; box-shadow: 0 4px 10px rgba(99, 102, 241, 0.2); transition: all 0.3s ease;">
+                Go to Interactive Ledger Explorer & Uploader &rarr;
+            </a>
+            <div class="header-action-badge">
+                <span style="display:inline-block; width: 8px; height: 8px; background: var(--success); border-radius: 50%; box-shadow: 0 0 8px var(--success);"></span>
+                Plotly Engine Active
+            </div>
         </div>
     </header>
 
@@ -576,7 +614,12 @@ html_content = f"""<!DOCTYPE html>
             <div class="kpi-card coral">
                 <div class="kpi-label">Opportunity Lost Pipeline</div>
                 <div class="kpi-value">{format_currency_in(total_lost_val)}</div>
-                <div class="kpi-subtext">{counts['lost']} High-Value dropped accounts</div>
+                <div class="kpi-subtext">{counts['lost']} Churned dropouts</div>
+            </div>
+            <div class="kpi-card orange">
+                <div class="kpi-label">Slipping Revenue Leakage</div>
+                <div class="kpi-value">{format_currency_in(slipping_revenue_leakage)}</div>
+                <div class="kpi-subtext">{slipping_accounts_count} Slipping active repeat accounts</div>
             </div>
         </div>
 
@@ -618,7 +661,21 @@ html_content = f"""<!DOCTYPE html>
             </div>
             <div class="chart-card">
                 <div class="card-header">
-                    <div class="card-title">Opportunity Lost Win-Back targets</div>
+                    <div class="card-title">📊 YoY Growth Rate vs. Cumulative Customer Sales Volume</div>
+                    <span class="badge badge-primary">Box Zoom Enabled</span>
+                </div>
+                {div_bubble}
+                <div class="insight-text">
+                    <strong style="color: #fff;">How to read this bubble plot:</strong> larger right-side bubbles are higher lifetime revenue clients. The Y-Axis represents latest year growth rate: bubbles above 0% are growing repeat clients, while bubbles below 0% are slipping repeat clients. Bubble sizes scale with FY 25-26 volume.
+                </div>
+            </div>
+        </div>
+
+        <!-- Row 3: Revenue Leakage and Win-Back Opportunity Pipelines -->
+        <div class="grid-equal">
+            <div class="chart-card">
+                <div class="card-header">
+                    <div class="card-title">Opportunity Lost Win-Back Pipeline</div>
                     <span class="badge badge-danger">High opportunity</span>
                 </div>
                 {div_lost}
@@ -626,23 +683,15 @@ html_content = f"""<!DOCTYPE html>
                     These are your highest value lost opportunity accounts. Recovering even the top 3 (e.g. <span class="highlight">{lost_df.iloc[0]['Particulars']}</span>, <span class="highlight">{lost_df.iloc[1]['Particulars']}</span>, and <span class="highlight">{lost_df.iloc[2]['Particulars']}</span>) would instantly inject over <span class="highlight">₹7.5 Lakhs</span> back into latest fiscal year sales.
                 </div>
             </div>
-        </div>
-
-        <!-- Row 3: Executive Analytics Bubble Plot -->
-        <div class="chart-card-full">
-            <div class="card-header">
-                <div class="card-title">📊 YoY Growth Rate vs. Cumulative Customer Sales Volume</div>
-                <span class="badge badge-primary">Box Zoom Enabled</span>
-            </div>
-            {div_bubble}
-            <div class="insight-text" style="border-top: none; padding-top: 0;">
-                <p style="margin-bottom: 0.5rem;"><strong style="color: #fff;">How to read this bubble plot:</strong></p>
-                <ul style="list-style-type: square; margin-left: 1.5rem; display: flex; flex-direction: column; gap: 0.25rem;">
-                    <li><strong>X-Axis (Logarithmic scale)</strong>: Shows lifetime revenue. Larger right-side bubbles are higher value clients.</li>
-                    <li><strong>Y-Axis</strong>: Shows latest year YoY percentage growth rate. High bubbles are expanding fast; bubbles below 0% represent declining accounts.</li>
-                    <li><strong>Bubble Size</strong>: Directly proportional to FY 25-26 outward volume. Larger circles represent active accounts.</li>
-                    <li><strong>Bubble Colors</strong>: Color-coded by segments. Retained (Green), New (Blue), Lost (Red), Inactive (Amber).</li>
-                </ul>
+            <div class="chart-card">
+                <div class="card-header">
+                    <div class="card-title">⚠️ Slipping Revenue Leakage Pipeline</div>
+                    <span class="badge badge-warning" style="background: rgba(249, 115, 22, 0.1); color: #f97316; border: 1px solid rgba(249, 115, 22, 0.2);">Slipping Revenue</span>
+                </div>
+                {div_slipping}
+                <div class="insight-text">
+                    These active repeat accounts have the largest year-over-year sales volume decline. Re-engaging the top slipping accounts (e.g. <span class="highlight">{slipping_df.iloc[0]['Particulars'] if len(slipping_df) > 0 else 'N/A'}</span>, <span class="highlight">{slipping_df.iloc[1]['Particulars'] if len(slipping_df) > 1 else 'N/A'}</span>) can quickly recover up to <span class="highlight">₹27.04 Lakhs</span> in decel sales.
+                </div>
             </div>
         </div>
     </main>
